@@ -17,7 +17,7 @@ jobs:
         run: |
           git clone https://github.com/gamekingv/docker-drive.git
           cd docker-drive
-          cat '{"buildAsExtension": false}' > ./src/build-type.json
+          echo '{"buildAsExtension": false}' > ./src/build-type.json
           yarn
           yarn build
           mv ./extension/dist ../server/views
