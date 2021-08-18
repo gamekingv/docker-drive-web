@@ -1,0 +1,5 @@
+---
+applications:
+ - name: docker-drive
+   random-route: true
+   memory: 256M

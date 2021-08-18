@@ -1,92 +1,54 @@
 name: build
+
 on:
   workflow_dispatch:
 
 jobs:
-  build:
+  push-to-ibm-foundry:
     runs-on: ubuntu-latest
+
     steps:
       - uses: actions/checkout@v2
       - uses: actions/setup-node@v2
         with:
           node-version: '14'
 
-      # 安装环境
-      - name: Install Enviroment
+      - name: Build Web
         run: |
+          git clone https://github.com/gamekingv/docker-drive.git
+          cd docker-drive
           yarn
-
-      # 编译扩展
-      - name: Build
-        run: |
           yarn build
+          mv ./extension/dist ../server/views
+      
+      - name: Set Repository
+        run: cat '{"url":"${{ secrets.URL }}","account":"${{ secrets.USERNAME }}:${{ secrets.PASSWORD }}"}' > ./server/repository.json
 
-      # 获取版本号
-      - name: Get Manifest
-        id: get_manifest
+      - name: Install IBM Cloud CLI
         run: |
-          JSON=$(cat extension/manifest.json)
-          JSON="${JSON//'%'/'%25'}"
-          JSON="${JSON//$'\n'/'%0A'}"
-          JSON="${JSON//$'\r'/'%0D'}"
-          echo "::set-output name=manifest_string::$JSON"
-      - name: Get Version
-        id: parse_manifest
+          curl -o cli.tar.gz https://clis.cloud.ibm.com/download/bluemix-cli/latest/linux64
+          tar -xzvf cli.tar.gz
+          chmod -R 777 ./Bluemix_CLI/
+          cd Bluemix_CLI
+          ./install
+          
+      - name: Login IBM Cloud
+        env:
+          IBM_ACCOUNT: ${{ secrets.IBM_ACCOUNT }}
+          REGION_NUM: ${{ secrets.REGION_NUM }}
         run: |
-          echo "::set-output name=version::${{ fromJSON(steps.get_manifest.outputs.manifest_string).version }}"
+          ibmcloud login <<EOF
+          $IBM_ACCOUNT
+          7
+          no
+          EOF
 
-      # 打包扩展
-      - name: Pack ZIP
-        uses: cardinalby/webext-buildtools-pack-extension-dir-action@v1
-        with:
-          extensionDir: 'extension'
-          zipFilePath: 'build/extension.zip'
+      - name: Target IBM Cloud
+        run: |
+          ibmcloud target --cf
+          ibmcloud cf install -f
 
-      - name: Pack CRX
-        uses: cardinalby/webext-buildtools-chrome-crx-action@v2
-        with:
-          zipFilePath: 'build/extension.zip'
-          crxFilePath: 'build/extension.crx'
-          privateKey: ${{ secrets.CRX_PRIVATE_KEY }}
-          updateXmlPath: 'build/update.xml'
-          updateXmlCodebaseUrl: "https://github.com/${{ github.repository }}/releases/latest/download/extension.crx"
-
-      # 发布Release
-      - name: Create Release
-        id: create_release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
-        with:
-          tag_name: v${{ steps.parse_manifest.outputs.version }}
-          release_name: v${{ steps.parse_manifest.outputs.version }}
-          body: "更新到 v${{ steps.parse_manifest.outputs.version }} 版本"
-          draft: false
-          prerelease: false
-      - name: Upload CRX
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./build/extension.crx
-          asset_name: extension.crx
-          asset_content_type: application/octet-stream
-      - name: Upload ZIP
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./build/extension.zip
-          asset_name: extension.zip
-          asset_content_type: application/octet-stream
-      - name: Upload XML
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./build/update.xml
-          asset_name: update.xml
-          asset_content_type: application/xml
+      - name: Restart IBM Cloud
+        run: |
+          cd ./server
+          ibmcloud cf push
