@@ -22,7 +22,9 @@ jobs:
           mv ./extension/dist ../server/views
       
       - name: Set Repository
-        run: cat '{"url":"${{ secrets.URL }}","account":"${{ secrets.USERNAME }}:${{ secrets.PASSWORD }}"}' > ./server/repository.json
+        run: |
+          cd ..
+          cat '{"url":"${{ secrets.URL }}","account":"${{ secrets.USERNAME }}:${{ secrets.PASSWORD }}"}' > ./server/repository.json
 
       - name: Install IBM Cloud CLI
         run: |
