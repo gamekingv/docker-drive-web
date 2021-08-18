@@ -1,5 +1,6 @@
 node_modules/
 *.DS_Store
+vcap-local.json
 README.md
 .github/
 .git/
