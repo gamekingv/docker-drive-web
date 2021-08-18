@@ -48,9 +48,9 @@ try {
 
 const appEnvOpts = vcapLocal ? { vcap: vcapLocal } : {};
 
-const appEnv = cfenv.getAppEnv(appEnvOpts);
+// const appEnv = cfenv.getAppEnv(appEnvOpts);
 
-if (appEnv.services['cloudantNoSQLDB'] || appEnv.getService(/[Cc][Ll][Oo][Uu][Dd][Aa][Nn][Tt]/)) {
+/*if (appEnv.services['cloudantNoSQLDB'] || appEnv.getService(/[Cc][Ll][Oo][Uu][Dd][Aa][Nn][Tt]/)) {
   // Load the Cloudant library.
   let Cloudant = require('@cloudant/cloudant');
   console.log(JSON.stringify(appEnv.services['cloudantNoSQLDB']));
@@ -62,7 +62,7 @@ if (appEnv.services['cloudantNoSQLDB'] || appEnv.getService(/[Cc][Ll][Oo][Uu][Dd
     // user-provided service with 'cloudant' in its name
     cloudant = Cloudant(appEnv.getService(/cloudant/).credentials);
   }
-} else if (process.env.CLOUDANT_URL) {
+} else*/ if (process.env.CLOUDANT_URL) {
   // Load the Cloudant library.
   let Cloudant = require('@cloudant/cloudant');
   console.log(JSON.stringify(process.env));
