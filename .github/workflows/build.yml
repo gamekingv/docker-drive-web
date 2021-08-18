@@ -24,7 +24,6 @@ jobs:
       - name: Set Repository
         run: |
           cd ..
-
           echo '{"url":"${{ secrets.URL }}","account":"${{ secrets.USERNAME }}:${{ secrets.PASSWORD }}"}' > ./server/repository.json
 
       - name: Install IBM Cloud CLI
