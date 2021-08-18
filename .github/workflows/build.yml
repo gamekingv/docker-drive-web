@@ -23,7 +23,6 @@ jobs:
       
       - name: Set Repository
         run: |
-          cd ..
           ls
           echo '{"url":"${{ secrets.URL }}","account":"${{ secrets.USERNAME }}:${{ secrets.PASSWORD }}"}' > ./server/repository.json
 
