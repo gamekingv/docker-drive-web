@@ -13,10 +13,10 @@ jobs:
         with:
           node-version: '14'
 
-      # - name: Build Web
-      #   run: |
-      #     git clone https://github.com/gamekingv/docker-drive.git
-      #     cd docker-drive
+      - name: Build Web
+        run: |
+          git clone https://github.com/gamekingv/docker-drive.git
+          cd docker-drive
       #     yarn
       #     yarn build
       #     mv ./extension/dist ../server/views
