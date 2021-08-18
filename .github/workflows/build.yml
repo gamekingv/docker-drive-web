@@ -33,6 +33,7 @@ jobs:
           chmod -R 777 ./Bluemix_CLI/
           cd Bluemix_CLI
           ./install
+          cd ../server
           
       - name: Login IBM Cloud
         env:
@@ -51,5 +52,4 @@ jobs:
 
       - name: Restart IBM Cloud
         run: |
-          cd ./server
           ibmcloud cf push
