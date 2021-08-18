@@ -20,13 +20,3 @@ You'll need a [IBM Cloud account](https://console.ng.bluemix.net/registration/),
 **Red Hat OpenShift on IBM Cloud**: [Deploy to Red Hat OpenShift on IBM Cloud](README-OpenShift.md)
 
 **IBM Cloud Private**: The starter application for IBM Cloud Private guides you through a similar process. However, instead of hosting both your service and application in the same cloud environment, you use a user-provided service. This guide shows you how to deploy your application to IBM Cloud Private and bind it to a Cloudant Database in IBM Cloud. For the complete procedure, see [Working with user-provided services and the Node.js starter app](https://www.ibm.com/support/knowledgecenter/SSBS6K_2.1.0/cloud_foundry/buildpacks/buildpacks_using_nodejsapp.html).
-
-## Repository Secret：
-
-URL：仓库URL
-
-USERNAME：登陆仓库的用户名
-
-PASSWORD：登陆仓库的密码
-
-IBM_ACCOUNT：IBM登陆邮箱及密码，以回车分隔
