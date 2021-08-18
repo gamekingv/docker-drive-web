@@ -5,7 +5,7 @@ const got = require('got');
 const { promisify } = require('util');
 const stream = require('stream');
 const pipeline = promisify(stream.pipeline);
-const fs = require('fs').promises;
+const fs = require('fs');
 
 const repository = {
   url: '',
@@ -14,14 +14,12 @@ const repository = {
   token: ''
 };
 
-(async () => {
-  const { url, account } = JSON.parse(await fs.readFile('./repository.json'));
-  if (url) repository.url = url;
-  if (account) {
-    const secret = new Buffer.from(`${account}`).toString('base64');
-    repository.secret = secret;
-  }
-})();
+const { url, account } = JSON.parse(fs.readFileSync('./repository.json'));
+if (url) repository.url = url;
+if (account) {
+  const secret = new Buffer.from(`${account}`).toString('base64');
+  repository.secret = secret;
+}
 
 app.use(express.urlencoded({ extended: false }));
 app.use(express.json());
