@@ -17,6 +17,7 @@ jobs:
         run: |
           git clone https://github.com/gamekingv/docker-drive.git
           cd docker-drive
+          cat '{"buildAsExtension": false}' > ./src/build-type.json
           yarn
           yarn build
           mv ./extension/dist ../server/views
@@ -28,7 +29,7 @@ jobs:
 
       - name: Install IBM Cloud CLI
         run: |
-          curl -o cli.tar.gz https://clis.cloud.ibm.com/download/bluemix-cli/latest/linux64
+          curl -o cli.tar.gz -L https://clis.cloud.ibm.com/download/bluemix-cli/latest/linux64
           tar -xzvf cli.tar.gz
           chmod -R 777 ./Bluemix_CLI/
           cd Bluemix_CLI
