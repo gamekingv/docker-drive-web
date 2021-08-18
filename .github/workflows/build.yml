@@ -34,7 +34,6 @@ jobs:
           chmod -R 777 ./Bluemix_CLI/
           cd Bluemix_CLI
           ./install
-          cd ../server
           
       - name: Login IBM Cloud
         env:
@@ -42,15 +41,16 @@ jobs:
         run: |
           ibmcloud login <<EOF
           $IBM_ACCOUNT
-          7
+          9
           no
           EOF
 
-      - name: Target IBM Cloud
+      - name: Target IBM Cloud Foundry
         run: |
           ibmcloud target --cf
           ibmcloud cf install -f
 
-      - name: Restart IBM Cloud
+      - name: Push to IBM Cloud
         run: |
+          cd ./server
           ibmcloud cf push
