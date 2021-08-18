@@ -43,7 +43,7 @@ function getAll() {
 let vcapLocal;
 try {
   vcapLocal = require('./vcap-local.json');
-  console.log('Loaded local VCAP', vcapLocal);
+  console.log('Loaded local VCAP', JSON.stringify(vcapLocal));
 } catch (e) { }
 
 const appEnvOpts = vcapLocal ? { vcap: vcapLocal } : {};
@@ -53,6 +53,7 @@ const appEnv = cfenv.getAppEnv(appEnvOpts);
 if (appEnv.services['cloudantNoSQLDB'] || appEnv.getService(/[Cc][Ll][Oo][Uu][Dd][Aa][Nn][Tt]/)) {
   // Load the Cloudant library.
   let Cloudant = require('@cloudant/cloudant');
+  console.log(JSON.stringify(appEnv.services['cloudantNoSQLDB']));
 
   // Initialize database with credentials
   if (appEnv.services['cloudantNoSQLDB']) {
@@ -64,7 +65,7 @@ if (appEnv.services['cloudantNoSQLDB'] || appEnv.getService(/[Cc][Ll][Oo][Uu][Dd
 } else if (process.env.CLOUDANT_URL) {
   // Load the Cloudant library.
   let Cloudant = require('@cloudant/cloudant');
-
+  console.log(JSON.stringify(process.env));
   if (process.env.CLOUDANT_IAM_API_KEY) { // IAM API key credentials
     let cloudantURL = process.env.CLOUDANT_URL;
     let cloudantAPIKey = process.env.CLOUDANT_IAM_API_KEY;
@@ -183,37 +184,37 @@ function errorHandler(error, response) {
     console.log(error.response.headers);
   }
   else console.error(error);
-  response.status(400).send({
+  if (response) response.status(400).send({
     message: '未知错误'
   });
 }
 
 app.get('/api/manifests', async (request, response) => {
-  if (repository.useDatabase && mydb) {
-    const { docs } = await getAll();
-    response.send({ files: parseDatabaseConfig(docs) });
-  }
-  else {
-    const [server, namespace, image] = repository.url.split('/') || [];
-    const manifestsURL = `https://${server}/v2/${namespace}/${image}/manifests/latest`;
-    const manifestsOptions = ({
-      headers: {
-        'Accept': 'application/vnd.docker.distribution.manifest.v2+json',
-        'repository': [server, namespace, image].join('/')
-      },
-      responseType: 'json'
-    });
-    try {
+  try {
+    if (repository.useDatabase && mydb) {
+      const { docs } = await getAll();
+      response.send({ files: parseDatabaseConfig(docs) });
+    }
+    else {
+      const [server, namespace, image] = repository.url.split('/') || [];
+      const manifestsURL = `https://${server}/v2/${namespace}/${image}/manifests/latest`;
+      const manifestsOptions = ({
+        headers: {
+          'Accept': 'application/vnd.docker.distribution.manifest.v2+json',
+          'repository': [server, namespace, image].join('/')
+        },
+        responseType: 'json'
+      });
       const { body } = await requestSender(manifestsURL, manifestsOptions);
       const configUrl = await getDownloadURL(body.config.digest);
       const { body: config } = await got(configUrl);
       response.send(config);
     }
-    catch (error) {
-      const { statusCode } = error.response || {};
-      if (statusCode === 404) response.status(404).send({});
-      else errorHandler(error);
-    }
+  }
+  catch (error) {
+    const { statusCode } = error.response || {};
+    if (statusCode === 404) response.status(404).send({});
+    else errorHandler(error, response);
   }
 });
 
@@ -238,7 +239,7 @@ app.get('/api/file/:digest', async (request, response) => {
     }));
   }
   catch (error) {
-    errorHandler(error);
+    errorHandler(error, response);
   }
 });
 
