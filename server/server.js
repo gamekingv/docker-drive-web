@@ -48,24 +48,28 @@ try {
 
 const appEnvOpts = vcapLocal ? { vcap: vcapLocal } : {};
 
-// const appEnv = cfenv.getAppEnv(appEnvOpts);
+const appEnv = cfenv.getAppEnv(appEnvOpts);
 
-/*if (appEnv.services['cloudantNoSQLDB'] || appEnv.getService(/[Cc][Ll][Oo][Uu][Dd][Aa][Nn][Tt]/)) {
-  // Load the Cloudant library.
+if (appEnv.services['cloudantNoSQLDB'] || appEnv.getService(/[Cc][Ll][Oo][Uu][Dd][Aa][Nn][Tt]/)) {
   let Cloudant = require('@cloudant/cloudant');
-  console.log(JSON.stringify(appEnv.services['cloudantNoSQLDB']));
-
-  // Initialize database with credentials
-  if (appEnv.services['cloudantNoSQLDB']) {
-    cloudant = Cloudant(appEnv.services['cloudantNoSQLDB'][0].credentials);
+  const vcap = appEnv.services['cloudantNoSQLDB'][0];
+  console.log(vcap);
+  if (vcapLocal) {
+    cloudant = Cloudant(vcap.credentials);
+  }
+  else if (vcap) {
+    let cloudantURL = vcap.credentials.url;
+    let cloudantAPIKey = vcap.credentials.apikey;
+    if (cloudantAPIKey) cloudant = Cloudant({ url: cloudantURL, plugins: { iamauth: { iamApiKey: cloudantAPIKey } } });
+    else cloudant = Cloudant(vcap.credentials);
   } else {
     // user-provided service with 'cloudant' in its name
     cloudant = Cloudant(appEnv.getService(/cloudant/).credentials);
   }
-} else*/ if (process.env.CLOUDANT_URL) {
+} else if (process.env.CLOUDANT_URL) {
   // Load the Cloudant library.
-  let Cloudant = require('@cloudant/cloudant');
   console.log(JSON.stringify(process.env));
+  let Cloudant = require('@cloudant/cloudant');
   if (process.env.CLOUDANT_IAM_API_KEY) { // IAM API key credentials
     let cloudantURL = process.env.CLOUDANT_URL;
     let cloudantAPIKey = process.env.CLOUDANT_IAM_API_KEY;
