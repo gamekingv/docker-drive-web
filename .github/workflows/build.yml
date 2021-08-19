@@ -27,15 +27,18 @@ jobs:
       - name: Set Repository
         run: |
           ls
-          echo '{"url":"${{ secrets.URL }}","account":"${{ secrets.USERNAME }}:${{ secrets.PASSWORD }}"}' > ./server/repository.json
+          echo '{"url":"${{ secrets.URL }}","account":"${{ secrets.USERNAME }}:${{ secrets.PASSWORD }}"}' > ./repository.json
 
       - name: Install IBM Cloud CLI
         run: |
           curl -o cli.tar.gz -L https://clis.cloud.ibm.com/download/bluemix-cli/latest/linux64
           tar -xzvf cli.tar.gz
+          rm -f cli.tar.gz
           chmod -R 777 ./Bluemix_CLI/
           cd Bluemix_CLI
           ./install
+          cd ..
+          rm -rf Bluemix_CLI
           
       - name: Login IBM Cloud
         env:
@@ -54,5 +57,4 @@ jobs:
 
       - name: Push to IBM Cloud
         run: |
-          cd ./server
           ibmcloud cf push
