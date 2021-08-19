@@ -7,6 +7,17 @@ const stream = require('stream');
 const pipeline = promisify(stream.pipeline);
 const fs = require('fs');
 
+app.enable('trust proxy');
+
+app.use(function (req, res, next) {
+  if (req.secure || process.env.BLUEMIX_REGION === undefined) {
+    next();
+  } else {
+    console.log('redirecting to https');
+    res.redirect('https://' + req.headers.host + req.url);
+  }
+});
+
 const repository = {
   url: '',
   secret: '',
@@ -20,6 +31,11 @@ if (account) {
   const secret = new Buffer.from(`${account}`).toString('base64');
   repository.secret = secret;
 }
+try {
+  const { token } = JSON.parse(fs.readFileSync(`./token-${repository.id}.json`));
+  if (token) repository.token = token;
+}
+catch (e) { }
 
 app.use(express.urlencoded({ extended: false }));
 app.use(express.json());
@@ -124,7 +140,10 @@ async function requestSender(url, options) {
     if (statusCode === 401) {
       try {
         const newToken = await getToken(headers['www-authenticate']);
-        if (newToken) repository.token = newToken;
+        if (newToken) {
+          repository.token = newToken;
+          fs.writeFileSync(`./token-${repository.id}.json`, JSON.stringify({ token: newToken }));
+        }
         else throw '获取token失败';
         return await client(url, {
           headers: {
