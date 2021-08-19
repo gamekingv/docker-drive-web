@@ -20,7 +20,9 @@ jobs:
           echo '{"buildAsExtension": false}' > ./src/build-type.json
           yarn
           yarn build
-          mv ./extension/dist ../server/views
+          cd ..
+          mv ./docker-drive/extension/dist ./views
+          rm -rf docker-drive
       
       - name: Set Repository
         run: |

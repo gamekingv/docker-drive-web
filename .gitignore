@@ -1,4 +1,4 @@
-server/vcap-local.json
-server/node_modules
-server/views
-server/repository.json
+vcap-local.json
+node_modules
+views
+repository.json
