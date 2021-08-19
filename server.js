@@ -10,7 +10,7 @@ const fs = require('fs');
 app.enable('trust proxy');
 
 app.use(function (req, res, next) {
-  if (req.secure || process.env.BLUEMIX_REGION === undefined) {
+  if (req.secure) {
     next();
   } else {
     console.log('redirecting to https');
