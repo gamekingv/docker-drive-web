@@ -25,9 +25,7 @@ jobs:
           rm -rf docker-drive
       
       - name: Set Repository
-        run: |
-          ls
-          echo '{"url":"${{ secrets.URL }}","account":"${{ secrets.USERNAME }}:${{ secrets.PASSWORD }}"}' > ./repository.json
+        run: echo '{"url":"${{ secrets.URL }}","account":"${{ secrets.USERNAME }}:${{ secrets.PASSWORD }}"}' > ./repository.json
 
       - name: Install IBM Cloud CLI
         run: |
