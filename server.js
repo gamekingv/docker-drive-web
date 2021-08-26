@@ -19,6 +19,7 @@ app.use(function (req, res, next) {
 });
 
 const repository = {
+  id: 1,
   url: '',
   secret: '',
   useDatabase: true,
@@ -31,11 +32,6 @@ if (account) {
   const secret = new Buffer.from(`${account}`).toString('base64');
   repository.secret = secret;
 }
-try {
-  const { token } = JSON.parse(fs.readFileSync(`./token-${repository.id}.json`));
-  if (token) repository.token = token;
-}
-catch (e) { }
 
 app.use(express.urlencoded({ extended: false }));
 app.use(express.json());
@@ -117,6 +113,7 @@ async function getToken(authenticateHeader) {
       timeout: { request: 10000 },
       responseType: 'json'
     });
+    console.log('成功获取新的token');
     return body.token;
   }
   else throw '获取token失败';
@@ -131,7 +128,7 @@ async function requestSender(url, options) {
   if (token) {
     defaultOptions.headers['Authorization'] = `Bearer ${token}`;
   }
-  const client = got.extend(Object.assign(defaultOptions, options));
+  const client = got.extend(defaultOptions).extend(options);
   try {
     return await client(url);
   }
@@ -142,7 +139,6 @@ async function requestSender(url, options) {
         const newToken = await getToken(headers['www-authenticate']);
         if (newToken) {
           repository.token = newToken;
-          fs.writeFileSync(`./token-${repository.id}.json`, JSON.stringify({ token: newToken }));
         }
         else throw '获取token失败';
         return await client(url, {
