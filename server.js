@@ -24,7 +24,7 @@ const { url, account } = JSON.parse(fs.readFileSync('./repository.json'));
 if (url) {
   let secret = '';
   if (account) secret = new Buffer.from(`${account}`).toString('base64');
-  url.replace(/\r/g, '').split('\n').filter(e => e).forEach(repo => {
+  url.split(',').filter(e => e).forEach(repo => {
     repositories.push({
       url: repo,
       secret,
