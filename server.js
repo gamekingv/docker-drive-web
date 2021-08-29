@@ -18,29 +18,30 @@ app.use(function (req, res, next) {
   }
 });
 
-const repository = {
-  id: 1,
-  url: '',
-  secret: '',
-  useDatabase: true,
-  token: ''
-};
+const repositories = [];
 
 const { url, account } = JSON.parse(fs.readFileSync('./repository.json'));
-if (url) repository.url = url;
-if (account) {
-  const secret = new Buffer.from(`${account}`).toString('base64');
-  repository.secret = secret;
+if (url) {
+  let secret = '';
+  if (account) secret = new Buffer.from(`${account}`).toString('base64');
+  url.replace(/\r/g, '').split('\n').filter(e => e).forEach(repo => {
+    repositories.push({
+      url: repo,
+      secret,
+      useDatabase: true,
+      token: ''
+    });
+  });
 }
 
 app.use(express.urlencoded({ extended: false }));
 app.use(express.json());
 
-let mydb, cloudant;
+let mydb = [], cloudant;
 
-function getAll() {
+function getAll(id) {
   return new Promise((res, rej) => {
-    mydb.find({
+    mydb[id].find({
       selector: { _id: { $gt: '0' } },
       fields: ['_id', 'name', 'type', 'digest', 'size', 'uploadTime', 'uuid'],
       sort: [{ uploadTime: 'desc' }]
@@ -92,22 +93,24 @@ if (appEnv.services['cloudantNoSQLDB'] || appEnv.getService(/[Cc][Ll][Oo][Uu][Dd
 }
 
 if (cloudant) {
-  const dbName = repository.url.replace(/\//g, '-').replace(/\./g, '_');
-  cloudant.db.create(dbName, (err) => {
-    if (!err) console.log(`Created database: ${dbName}`);
-    else console.log(`Database exists: ${dbName}`);
+  repositories.forEach(repository => {
+    const dbName = repository.url.replace(/\//g, '-').replace(/\./g, '_');
+    cloudant.db.create(dbName, (err) => {
+      if (!err) console.log(`Created database: ${dbName}`);
+      else console.log(`Database exists: ${dbName}`);
+    });
+    mydb.push(cloudant.db.use(dbName));
   });
-  mydb = cloudant.db.use(dbName);
 }
 
-async function getToken(authenticateHeader) {
+async function getToken(authenticateHeader, id) {
   if (!authenticateHeader) throw '获取认证header失败';
   const [, realm, service, , scope] = authenticateHeader.match(/^Bearer realm="([^"]*)",service="([^"]*)"(,scope="([^"]*)"|)/) || [];
   if (realm && service) {
     let authenticateURL = `${realm}?service=${service}`;
     if (scope) authenticateURL += `&scope=${scope}`;
     const headers = {};
-    if (repository.secret) headers['Authorization'] = `Basic ${repository.secret}`;
+    if (repositories[id].secret) headers['Authorization'] = `Basic ${repositories[id].secret}`;
     const { body } = await got.get(authenticateURL, {
       headers,
       timeout: { request: 10000 },
@@ -119,8 +122,8 @@ async function getToken(authenticateHeader) {
   else throw '获取token失败';
 }
 
-async function requestSender(url, options) {
-  const token = repository.token;
+async function requestSender(url, options, id) {
+  const token = repositories[id].token;
   const defaultOptions = {
     timeout: { request: 60000 },
     headers: {}
@@ -136,9 +139,9 @@ async function requestSender(url, options) {
     const { statusCode, headers } = error.response || {};
     if (statusCode === 401) {
       try {
-        const newToken = await getToken(headers['www-authenticate']);
+        const newToken = await getToken(headers['www-authenticate'], id);
         if (newToken) {
-          repository.token = newToken;
+          repositories[id].token = newToken;
         }
         else throw '获取token失败';
         return await client(url, {
@@ -158,8 +161,8 @@ async function requestSender(url, options) {
   }
 }
 
-async function getDownloadURL(digest) {
-  const [server, namespace, image] = repository.url.split('/') || [];
+async function getDownloadURL(digest, id) {
+  const [server, namespace, image] = repositories[id].url.split('/') || [];
   const url = `https://${server}/v2/${namespace}/${image}/blobs/${digest}`;
   const options = {
     headers: {
@@ -168,7 +171,7 @@ async function getDownloadURL(digest) {
     timeout: { request: 10000 },
     followRedirect: false
   };
-  const { headers } = await requestSender(url, options);
+  const { headers } = await requestSender(url, options, id);
   return headers.location;
 }
 
@@ -210,12 +213,13 @@ function errorHandler(error, response) {
 
 app.get('/api/manifests', async (request, response) => {
   try {
-    if (repository.useDatabase && mydb) {
-      const { docs } = await getAll();
+    const id = (parseInt(request.query.repo) || 1) - 1;
+    if (repositories[id].useDatabase && mydb[id]) {
+      const { docs } = await getAll(id);
       response.send({ files: parseDatabaseConfig(docs) });
     }
     else {
-      const [server, namespace, image] = repository.url.split('/') || [];
+      const [server, namespace, image] = repositories[id].url.split('/') || [];
       const manifestsURL = `https://${server}/v2/${namespace}/${image}/manifests/latest`;
       const manifestsOptions = ({
         headers: {
@@ -224,8 +228,8 @@ app.get('/api/manifests', async (request, response) => {
         },
         responseType: 'json'
       });
-      const { body } = await requestSender(manifestsURL, manifestsOptions);
-      const configUrl = await getDownloadURL(body.config.digest);
+      const { body } = await requestSender(manifestsURL, manifestsOptions, id);
+      const configUrl = await getDownloadURL(body.config.digest, id);
       const { body: config } = await got(configUrl);
       response.send(config);
     }
@@ -239,7 +243,8 @@ app.get('/api/manifests', async (request, response) => {
 
 app.get('/api/file/:digest', async (request, response) => {
   try {
-    const downloadUrl = await getDownloadURL(`sha256:${request.params.digest}`);
+    const id = (parseInt(request.query.repo) || 1) - 1;
+    const downloadUrl = await getDownloadURL(`sha256:${request.params.digest}`, id);
     if (downloadUrl) {
       if (request.query.type === 'download') {
         await pipeline(
