@@ -1,6 +1,6 @@
 # Repository Secret
 
-URL：仓库URL
+URL：仓库URL（支持多个仓库，回车分割，最多100个）
 
 USERNAME：登陆仓库的用户名
 
